@@ -15,7 +15,10 @@ RUN pip install prisma
 # Copy rest of code 1-1
 COPY . .
 
-# Generate prisma client once container starts
+# migrate prisma client once container starts
 RUN prisma generate --schema app/models/schema.prisma
+
+# Apply migrations
+RUN prisma migrate deploy --schema app/models/schema.prisma
 
 CMD ["python", "main.py"]

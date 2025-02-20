@@ -1,25 +1,41 @@
 services:
   flask-app:
+    container_name: flask-app
     build: .
     ports:
       - "5000:5000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       DATABASE_URL: postgresql://postgres:password@db:5432/prisma_db
     volumes:
       - .:/app
+    networks:
+      - prisma-network
   
   db:
+    container_name: dnd_db
     image: postgres:15
+    restart: always
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       POSTGRES_DB: prisma_db
     ports:
-      - "5432:5432"
+      - 5432:5432
     volumes:
       - pgdata:/var/lib/postgresql/data
+    networks:
+      - prisma-network
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "prisma_db"]
+      interval: 10s
+      retries: 5
+      start_period: 10s
+      timeout: 5s
     
+networks:
+  prisma-network:
 volumes:
   pgdata:
