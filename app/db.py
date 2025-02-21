@@ -5,11 +5,25 @@ from prisma import Prisma, register
 
 logging.basicConfig(level=logging.INFO)
 
-prisma = Prisma()
-register(prisma)  # Register operation lifecycle with prisma
+
+def PrismaInit():
+    logging.info("Initiating Prisma...")
+    prisma = Prisma()
+    logging.info("Prisma Initiated")
+    logging.info("Connecting prisma to Database")
+    prisma.connect()
+    logging.info("Prisma connected to database")
+    logging.info("Registering Prisma client...")
+    register(prisma)  # Register operation lifecycle with prisma
+    logging.info("Prisma client registered")
 
 
-async def connect_prisma():
+""" 
+Below deprecated for now, turns out continous 
+connection/disconnections is expensive and is better to generally just let Prisma handle it 
+"""
+
+""" async def connect_prisma():
     logging.info("connecting Prisma")
     await prisma.connect()
     logging.info("prisma connected")
@@ -22,7 +36,7 @@ async def disconnect_prisma():
 
 
 def prismaQuery(func):
-    """Decorator ensures Prisma is connected before executing the query"""
+    Decorator ensures Prisma is connected before executing the query
 
     @wraps(func)
     async def wrapper(*args, **kwargs):
@@ -36,3 +50,4 @@ def prismaQuery(func):
             raise
 
     return wrapper
+ """
