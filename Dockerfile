@@ -18,7 +18,5 @@ COPY . .
 # migrate prisma client once container starts
 RUN prisma generate --schema app/models/schema.prisma
 
-# Apply migrations
-RUN prisma migrate deploy --schema app/models/schema.prisma
-
-CMD ["python", "main.py"]
+# Apply migrations after 5 second delay to ensure db has started up
+CMD ["sh", "-c", "sleep 5 && prisma migrate deploy --schema app/models/schema.prisma && python main.py"]
