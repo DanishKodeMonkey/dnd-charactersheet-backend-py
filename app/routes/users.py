@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
+import asyncio
 from app.db import prismaQuery
-from prisma.models import User
+from prisma.models import Users
 
 users_bp = Blueprint("users", __name__)
 
@@ -9,7 +10,11 @@ users_bp = Blueprint("users", __name__)
 @users_bp.route("", methods=["GET"])
 @prismaQuery
 async def get_users():
-    return jsonify({"message": "List of users"})
+    try:
+        users = await Users.prisma().find_many()
+        return {"data": [user.dict() for user in users]}
+    except Exception as e:
+        return jsonify({"error": f"Failed to get users {str(e)}"}), 500
 
 
 @users_bp.route("/create", methods=["POST"])
@@ -25,7 +30,9 @@ async def create_user():
 
     if name is None or email is None:
         return jsonify({"error": "You need to provide a name and a email"})
+    try:
 
-    user = await User.prisma().create(data={"email": email, "name": name})
-
-    return jsonify(user), 201
+        user = await Users.prisma().create(data={"email": email, "name": name})
+        return jsonify({"message": f"User {name} created successfully"}), 201
+    except Exception as e:
+        return jsonify({"error": f"Failed to create user: {str(e)}"}), 500
