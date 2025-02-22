@@ -4,6 +4,7 @@ from functools import wraps
 from prisma import Prisma, register
 
 logging.basicConfig(level=logging.INFO)
+logging.getLogger("prisma").setLevel(logging.DEBUG)
 
 
 def PrismaInit():
