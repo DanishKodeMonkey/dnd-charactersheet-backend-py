@@ -1,9 +1,9 @@
 services:
-  flask-app:
-    container_name: flask-app
+  fastapi-app:
+    container_name: fastapi-app
     build: .
     ports:
-      - "5000:5000"
+      - "8000:8000"
     depends_on:
       db:
         condition: service_healthy

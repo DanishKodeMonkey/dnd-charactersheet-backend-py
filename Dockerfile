@@ -22,4 +22,4 @@ COPY . .
 
 
 # Apply migrations after 5 second delay to ensure db has started up
-CMD ["sh", "-c", "sleep 5 && prisma migrate deploy --schema app/models/schema.prisma && python main.py"]
+CMD ["sh", "-c", "sleep 5 && prisma migrate deploy --schema app/models/schema.prisma && uvicorn main:app --host 0.0.0.0 --port 8000"]
