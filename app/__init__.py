@@ -1,12 +1,21 @@
-from flask import Flask
-import asyncio
-from app.routes import register_blueprints
+import time
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, Request
+from app.db import connect_db, disconnect_db
+from app.routes import register_routers
 
 
-def create_app() -> None:
+def create_app() -> FastAPI:
 
-    app = Flask(__name__)
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        # Load database using prisma
+        await connect_db()
+        yield
+        # Disconnect prisma after use
+        await disconnect_db()
 
-    register_blueprints(app)
+    app = FastAPI(title="FastApi Prisma dnd API", lifespan=lifespan)
+    register_routers(app)
 
     return app
