@@ -1,7 +1,8 @@
-from .users import users_bp
-from .characters import characters_bp
+from fastapi import FastAPI
+from .users import router as users_router
+from .characters import router as characters_router
 
 
-def register_blueprints(app):
-    app.register_blueprint(users_bp, url_prefix="/users")
-    app.register_blueprint(characters_bp, url_prefix="/characters")
+def register_routers(app: FastAPI) -> None:
+    app.include_router(users_router, prefix="/users", tags=["Users"])
+    app.include_router(characters_router, prefix="/characters", tags=["Characters"])

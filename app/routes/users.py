@@ -1,34 +1,28 @@
-from flask import Blueprint, jsonify, request
-from prisma.models import Users
+from fastapi import APIRouter, HTTPException
+from app.db import db
 
-users_bp = Blueprint("users", __name__)
-
-
-# Testing route
-@users_bp.route("", methods=["GET"])
-def get_users():
-    try:
-        users = Users.prisma().find_many()
-        return {"data": [user.dict() for user in users]}
-    except Exception as e:
-        return jsonify({"error": f"Failed to get users {str(e)}"}), 500
+""" Generate API router, will be registered to app in __init__.py """
+router = APIRouter()
 
 
-@users_bp.route("/create", methods=["POST"])
-def create_user():
-    data = request.get_json()
+@router.get("")
+async def get_users():
+    """Retrieve a list of all users."""
+    users = await db.users.find_many()
+    return users
 
-    if data is None:
-        return jsonify({"error": "Invalid data provided"})
 
-    name = data.get("name")
-    email = data.get("email")
+@router.post("/create")
+async def create_user(user: dict):
+    """Create new user with provided data"""
+    new_user = await db.users.create(data=user)
+    return new_user
 
-    if name is None or email is None:
-        return jsonify({"error": "You need to provide a name and a email"})
-    try:
 
-        user = Users.prisma().create(data={"email": email, "name": name})
-        return dict(user)
-    except Exception as e:
-        return jsonify({"error": f"Failed to create user: {str(e)}"}), 500
+@router.get("/{user_id}")
+async def get_user(user_id: int):
+    """Retrieve a user by ID."""
+    user = await db.users.find_unique(where={"id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user  # Return prisma model no conversion

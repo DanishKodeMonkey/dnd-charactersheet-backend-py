@@ -1,9 +1,9 @@
-from flask import Blueprint, jsonify
+from fastapi import APIRouter, HTTPException
 
-characters_bp = Blueprint("characters", __name__)
+router = APIRouter()
 
 
 # Testing route
-@characters_bp.route("", methods=["GET"])
-def get_characters():
-    return jsonify({"message": "List of characters"})
+@router.get("")
+async def get_characters():
+    return {"Message": "This is all the characters (placeholder)"}
