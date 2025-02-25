@@ -1,5 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from app.db import db
+from app.schemas.users import UserCreate, UserResponse
+from prisma.models import Users
 
 """ Generate API router, will be registered to app in __init__.py """
 router = APIRouter()
@@ -12,10 +14,17 @@ async def get_users():
     return users
 
 
-@router.post("/create")
-async def create_user(user: dict):
+@router.post(
+    "/create", response_model=UserResponse
+)  # Response must match pydantic response
+async def create_user(user: UserCreate):  # Request must match pydantic UserCreate shape
+    """API-level validation, if failed will not reach prisma, saves DB calls"""
+    existing = db.users.find_unique({"email": user.email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already in use")
+
     """Create new user with provided data"""
-    new_user = await db.users.create(data=user)
+    new_user = await db.users.create(data=user.model_dump())
     return new_user
 
 
