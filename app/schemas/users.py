@@ -1,12 +1,16 @@
 from pydantic import BaseModel, EmailStr, Field
 
+
 # Input validation
-class UserCreate(BaseModel):
+class UserCreate(BaseModel):  # Extend pydantic basemodel for validation
     email: EmailStr
-    name: str = Field(..., min_length=4, max_length=30,regex="^[a-zA-Z ]+$") # Regex limited to letters & spaces
+    name: str = Field(
+        ..., min_length=4, max_length=30, regex="^[a-zA-Z ]+$"
+    )  # Regex limited to letters & spaces
+
 
 # Output validation (responses)
-class UserResponse(BaseModel)
+class UserResponse(BaseModel):
     id: int
     email: EmailStr
     name: str

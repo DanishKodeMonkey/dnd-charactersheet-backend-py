@@ -1,7 +1,6 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException
 from app.db import db
 from app.schemas.users import UserCreate, UserResponse
-from prisma.models import Users
 
 """ Generate API router, will be registered to app in __init__.py """
 router = APIRouter()
@@ -25,7 +24,7 @@ async def create_user(user: UserCreate):  # Request must match pydantic UserCrea
 
     """Create new user with provided data"""
     new_user = await db.users.create(data=user.model_dump())
-    return new_user
+    return {"message": "User created!", "data": user.model_dump()}
 
 
 @router.get("/{user_id}")
