@@ -29,3 +29,9 @@ class UserResponse(BaseModel):
 
     class Config:
         from_attributes = True  # Map prisma model attributes to pydantic fields
+
+
+class UsersLogin(BaseModel):
+    email: EmailStr
+    password: str | None = None
+    oauth_id: str | None = None
