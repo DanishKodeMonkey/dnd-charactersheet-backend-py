@@ -72,3 +72,29 @@ def issue_refresh_token(user_id: str) -> str:
     expire = datetime.now(timezone.utc) + timedelta(hours=REFRESH_TOKEN_EXPIRE_HOURS)
     payload = {"sub": user_id, "exp": expire}
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def verify_refresh_token(refresh_token: str) -> str:
+    """
+    Verifies provided refresh token and extracts the user ID from it
+
+    Args:
+        refresh_token(str): The refresh token to be verified
+
+    Returns:
+        str: The user ID to be extracted from the refresh token's payload
+
+    Raises:
+        HTTPException: If the refresh token is invalid or expired, an exception is raised
+    """
+    try:
+        payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: str = payload.get("sub")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Invalid refresh token")
+        return user_id
+    except JWTError:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or expired refresh token. Please log in again.",
+        )

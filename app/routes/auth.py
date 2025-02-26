@@ -1,9 +1,12 @@
-from fastapi import APIRouter, HTTPException, Depends
-
+from fastapi import APIRouter, HTTPException
 from app.db import db
 from app.schemas.users import UsersLogin
 from app.auth import verify_password
-from app.utils.auth import create_access_token, verify_access_token
+from app.utils.auth import (
+    create_access_token,
+    issue_refresh_token,
+    verify_refresh_token,
+)
 
 
 router = APIRouter()
@@ -15,7 +18,7 @@ async def login(user: UsersLogin):
     Login endpoint: Authenticate a user based on email and password or OAuth credentials.
 
     This endpoint allows users to log in either manually (with a password) or using OAuth (Google or Discord).
-    It checks whether the user's credentials are valid and, if successful, generates and returns a JWT access token.
+    It checks whether the user's credentials are valid and, if successful, generates and returns a JWT access token and refresh token.
 
     Args:
         user (UsersLogin): The user credentials, which include the email, password (for manual login), and OAuth ID (for OAuth login).
@@ -29,10 +32,12 @@ async def login(user: UsersLogin):
 
     Returns:
         dict: A dictionary containing the access token (`access_token`) and the token type (`token_type`, which is always "bearer").
+        as well as a refresh token for increased security and accessability
             Example:
             {
                 "access_token": "your_jwt_token_here",
                 "token_type": "bearer"
+                "refresh_token": "your_refresh_token_here
             }
 
     Returned dict is then stored in the user frontend securely, refresh tokens are then generated as needed for consistent access.
@@ -62,5 +67,40 @@ async def login(user: UsersLogin):
 
     # Generate JWT token after access authentication
     access_token = create_access_token(data={"sub": str(db_user.id)})
+    refresh_token = issue_refresh_token(user_id=str(db_user.id))
 
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "refresh_token": refresh_token,
+    }
+
+
+@router.post("/refresh")
+async def refresh_token(refresh_token: str):
+    """
+    Refresh endpoint: issue a new access token using a valid refresh.
+
+    This endpoint allows users to refresh their access by providing a valid refresh token
+    The refresh token must be valid and not expired, if expired, a new login will be required, and user will be rerouted to login
+    If valid, the user will be issued a new access token
+
+    Args:
+        refresh_token(str): Refresh token to be validated and used to issue a new token
+
+    Raises:
+        HTTPException: If the refresh token is invalid or expired(401)
+
+    Returns:
+        dict: A dictionary containing the new access token ('access_token') and the token type ('token_type', always "bearer")
+    """
+    try:
+        user_id = verify_refresh_token(refresh_token)
+
+        # generate access token
+        access_token = create_access_token(data={"sub": user_id})
+
+        return {"access_token": access_token, "token_type": "bearer"}
+    except HTTPException as exception:
+        # Log error if it occurs, and raise exception to frontend for handling
+        return exception
