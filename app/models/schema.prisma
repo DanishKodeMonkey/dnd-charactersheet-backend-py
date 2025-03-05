@@ -9,7 +9,7 @@ datasource db {
 }
 
 model User {
-    id             String       @id @default(uuid())
+    id             String       @id @default(uuid()) @db.Uuid
     username       String
     email          String       @unique
     password       String? // Nullable for Oath
@@ -29,7 +29,7 @@ enum AuthProvider {
 // HUSKAT monitor performance impact of Json fields, normalise if tradeoff for flexibility is too much
 // ENSURE JSON FIELDS ARE STRICTLY CHECKED, VALIDATED AND ENFORCED FOR TYPE SHAPES
 model Character {
-    id            String @id @default(uuid()) // Unique character identifier
+    id            String @id @default(uuid()) @db.Uuid // Unique character identifier
     userId        String @db.Uuid
     characterName String
 
@@ -43,23 +43,23 @@ model Character {
     eyes      String
     hair      String
 
-    class     String
-    race      String
-    level     Int      @default(0)
-    statsId   String   @unique // Stores ability scores, modifiers, temp scores, temp modifiers
-    inventory Json? // Items, equipment, etc.
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+    characterClass String   @map("class")
+    race           String
+    level          Int      @default(0)
+    statsId        String   @unique @db.Uuid // Stores ability scores, modifiers, temp scores, temp modifiers
+    inventory      Json? // Items, equipment, etc.
+    createdAt      DateTime @default(now())
+    updatedAt      DateTime @updatedAt
 
     // Foreign fields
     playerName  User         @relation(fields: [userId], references: [id], onDelete: Cascade) // user reference fields ties User model id to Character model userId, if user is deleted, cascade delete all characters.
-    stats       Stat         @relation(fields: [statsId], references: [id]) // Stat reference
+    stats       Stat         @relation(fields: [statsId], references: [id], onDelete: Cascade) // Stat reference
     skills      Skill[]
     SkillPoints SkillPoints?
 }
 
 model Stat {
-    id               String     @id @default(uuid())
+    id               String     @id @default(uuid()) @db.Uuid
     Character        Character?
     strength         Int
     dexterity        Int
@@ -76,9 +76,9 @@ model Stat {
 }
 
 model Skill {
-    id          String      @id @default(uuid())
+    id          String      @id @default(uuid()) @db.Uuid
     character   Character   @relation(fields: [characterId], references: [id], onDelete: Cascade)
-    characterId String
+    characterId String      @unique @db.Uuid
     name        String
     ability     AbilityEnum // e.g dexterity
     ranks       Int
@@ -87,8 +87,8 @@ model Skill {
 }
 
 model SkillPoints {
-    id          String    @id @default(uuid())
-    characterId String    @unique
+    id          String    @id @default(uuid()) @db.Uuid
+    characterId String    @unique @db.Uuid
     max         Int
     current     Int
     character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
