@@ -45,11 +45,11 @@ async def signup(user: UserSignUp):  # Request must match pydantic UserCreate sh
     """
     try:
         new_user = await create_user(user)
-        return new_user
+        return {"message": "User created successfully"}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
 
 
 @router.get("/{user_id}")
