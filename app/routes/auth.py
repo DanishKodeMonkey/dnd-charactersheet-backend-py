@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from app.db import db
-from app.schemas.users import UsersLogin
-from app.auth import verify_password
+from app.schemas.users import UserSignIn, UserSignUp
+from app.auth import verify_password, hash_password
 from app.utils.auth import (
     create_access_token,
     issue_refresh_token,
@@ -12,8 +12,8 @@ from app.utils.auth import (
 router = APIRouter()
 
 
-@router.post("/login")
-async def login(user: UsersLogin):
+@router.post("/signin")
+async def signin(user: UserSignIn):
     """
     Login endpoint: Authenticate a user based on email and password or OAuth credentials.
 

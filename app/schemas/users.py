@@ -5,14 +5,14 @@ from uuid import UUID
 
 
 # Input validation
-class UserCreate(BaseModel):  # Extend pydantic basemodel for validation
+class UserSignUp(BaseModel):  # Extend pydantic basemodel for validation
     email: EmailStr
     username: str = Field(
-        ..., min_length=4, max_length=30, pattern="^[a-zA-Z ]+$"
-    )  # Regex limited to letters & spaces
+        ..., min_length=4, max_length=30, pattern="^[a-zA-Z0-9_]+$"
+    )  # Regex limited to letters, spaces and underscores
     password: Optional[str]  # Optional for Oauth users
-    oauth_provider: str  # oAuth provider (google, discord, manual)
-    oauth_id: Optional[str]  # Optional oAuth ID
+    oauth_provider: Optional[str] = "manual"  # oAuth provider (google, discord, manual)
+    oauth_id: Optional[str] = None  # Optional oAuth ID
 
     class Config:
         # Ensure values can be passed through ORM PRisma client
@@ -31,7 +31,7 @@ class UserResponse(BaseModel):
         from_attributes = True  # Map prisma model attributes to pydantic fields
 
 
-class UsersLogin(BaseModel):
+class UserSignIn(BaseModel):
     email: EmailStr
     password: str | None = None
     oauth_id: str | None = None

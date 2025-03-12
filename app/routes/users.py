@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from app.db import db
-from app.schemas.users import UserCreate, UserResponse
+from app.schemas.users import UserSignUp, UserResponse
+from app.services.user_service import create_user, get_user_by_username, get_user_by_id
 from app.auth import hash_password
 
 """ Generate API router, will be registered to app in __init__.py """
@@ -10,6 +11,7 @@ router = APIRouter()
 @router.get("")
 async def get_users():
     """
+    Remove for production, mainly for testing
     Retrieve a list of all users.
 
     This endpoint fetches all users from the database. It returns a list of user objects, which includes details like the user's
@@ -23,9 +25,9 @@ async def get_users():
 
 
 @router.post(
-    "/create", response_model=UserResponse
+    "/signup", response_model=UserResponse
 )  # Response must match pydantic response
-async def create_user(user: UserCreate):  # Request must match pydantic UserCreate shape
+async def signup(user: UserSignUp):  # Request must match pydantic UserCreate shape
     """
     Create a new user with the provided data.
 
@@ -41,20 +43,13 @@ async def create_user(user: UserCreate):  # Request must match pydantic UserCrea
     Returns:
         UserResponse: The created user's data, represented by the UserResponse Pydantic model.
     """
-    existing = await db.user.find_unique({"email": user.email})
-    if existing:
-        raise HTTPException(status_code=400, detail="Email already in use")
-    if user.password:
-        hashed_password = hash_password(user.password)
-    else:
-        hashed_password = None
-
-    user_data = user.model_dump()
-    if hashed_password:
-        user_data["password"] = hashed_password
-
-    new_user = await db.user.create(data=user_data)
-    return new_user
+    try:
+        new_user = await create_user(user)
+        return new_user
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
 @router.get("/{user_id}")
@@ -73,7 +68,7 @@ async def get_user(user_id: int):
     Returns:
         UserResponse: The user's data, represented by the UserResponse Pydantic model.
     """
-    user = await db.user.find_unique(where={"id": user_id})
+    user = await get_user_by_id(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user  # Return prisma model no conversion
