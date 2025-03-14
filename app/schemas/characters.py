@@ -6,6 +6,27 @@ from enum import Enum
 # Pydantic model reflecting central state object on frontend typescript
 
 
+## Character Details section
+class AlignmentEnum(str, Enum):
+    LAWFUL_GOOD = "LAWFUL_GOOD"
+    NEUTRAL_GOOD = "NEUTRAL_GOOD"
+    CHAOTIC_GOOD = "CHAOTIC_GOOD"
+    LAWFUL_NEUTRAL = "LAWFUL_NEUTRAL"
+    TRUE_NEUTRAL = "TRUE_NEUTRAL"
+    CHAOTIC_NEUTRAL = "CHAOTIC_NEUTRAL"
+    LAWFUL_EVIL = "LAWFUL_EVIL"
+    NEUTRAL_EVIL = "NEUTRAL_EVIL"
+    CHAOTIC_EVIL = "CHAOTIC_EVIL"
+
+
+class SizeEnum(str, Enum):
+    GIANT = "GIANT"
+    LARGE = "LARGE"
+    MEDIUM = "MEDIUM"
+    SMALL = "SMALL"
+    TINY = "TINY"
+
+
 class ClassBaseSaves(BaseModel):
     fortitudeBase: int
     reflexBase: int
@@ -17,23 +38,45 @@ class ClassSpellShape(BaseModel):
     spellsKnown: Dict[int, int]
 
 
-class CharacterDetails(BaseModel):
-    characterName: str
-    playerName: str
+class ClassShape(BaseModel):
     className: str
     baseAttack: int
     baseSkill: int
-    classSkills: Optional[Set[str]] = None
-    specials: Optional[list[str]] = None
+    classSkills: Set[str] = set()
+    specials: list[str] = []
     spells: Optional[ClassSpellShape] = None
     baseSave: ClassBaseSaves
+
+
+class RaceShape(BaseModel):
     raceName: str
     raceBase: int
     raceBonus: int
-    alignment: str
+
+
+class SizeShape(BaseModel):
+    sizeName: SizeEnum
+    ACMod: int
+
+
+class CharacterDetails(BaseModel):
+    characterName: str
+    playerName: str
+
+    characterClass: ClassShape
+
+    baseAttack: int
+    baseSkill: int
+
+    race: RaceShape
+
+    alignment: AlignmentEnum
+
     deity: str
     level: int
-    sizeName: str
+
+    size: SizeShape
+
     ACMod: int
     age: int
     sex: str
@@ -41,6 +84,18 @@ class CharacterDetails(BaseModel):
     weight: int
     eyes: str
     hair: str
+
+
+## Stats section
+
+
+class ModifiersShape(BaseModel):
+    strength: int
+    dexterity: int
+    constitution: int
+    intelligence: int
+    wisdom: int
+    charisma: int
 
 
 class Stats(BaseModel):
@@ -121,23 +176,3 @@ class State(BaseModel):
     bonus: Bonus
     SavingThrows: SavingThrows
     skills: Skills
-
-
-class AlignmentEnum(str, Enum):
-    LAWFUL_GOOD = "LAWFUL_GOOD"
-    NEUTRAL_GOOD = "NEUTRAL_GOOD"
-    CHAOTIC_GOOD = "CHAOTIC_GOOD"
-    LAWFUL_NEUTRAL = "LAWFUL_NEUTRAL"
-    TRUE_NEUTRAL = "TRUE_NEUTRAL"
-    CHAOTIC_NEUTRAL = "CHAOTIC_NEUTRAL"
-    LAWFUL_EVIL = "LAWFUL_EVIL"
-    NEUTRAL_EVIL = "NEUTRAL_EVIL"
-    CHAOTIC_EVIL = "CHAOTIC_EVIL"
-
-
-class SizeEnum(str, Enum):
-    GIANT = "GIANT"
-    LARGE = "LARGE"
-    MEDIUM = "MEDIUM"
-    SMALL = "SMALL"
-    TINY = "TINY"
