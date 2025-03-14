@@ -189,3 +189,15 @@ class SkillsShape(BaseModel):
 class Skills(BaseModel):
     skillPoints: SkillPointsShape
     skills: Dict[str, SkillsShape]
+
+
+## Finally, assemble to State object
+
+
+class State(BaseModel):
+    characterDetails: CharacterDetails
+    stats: Stats
+    status: Status
+    bonus: Bonus
+    savingThrows: SavingThrows
+    skills: Skills
