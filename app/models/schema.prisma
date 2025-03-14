@@ -29,96 +29,26 @@ enum AuthProvider {
 // HUSKAT monitor performance impact of Json fields, normalise if tradeoff for flexibility is too much
 // ENSURE JSON FIELDS ARE STRICTLY CHECKED, VALIDATED AND ENFORCED FOR TYPE SHAPES
 model Character {
-    id            String @id @default(uuid()) @db.Uuid // Unique character identifier
-    userId        String @db.Uuid
-    characterName String
-
-    alignment AlignmentEnum @default(TRUE_NEUTRAL)
-    deity     String?
-    size      SizeEnum      @default(MEDIUM)
-    age       Int
-    sex       String
-    height    Int
-    weight    Int
-    eyes      String
-    hair      String
-
-    characterClass String   @map("class")
+    // Searchable query normalised fields here
+    id             String @id @default(uuid()) @db.Uuid // Unique character identifier
+    userId         String @db.Uuid
+    characterName  String
+    characterClass String @map("class")
     race           String
-    level          Int      @default(0)
-    statsId        String   @unique @db.Uuid // Stores ability scores, modifiers, temp scores, temp modifiers
-    inventory      Json? // Items, equipment, etc.
-    createdAt      DateTime @default(now())
-    updatedAt      DateTime @updatedAt
+    level          Int    @default(0)
+
+    characterDetails Json // Save characterDetails in full as well here for frontend
+    stats            Json
+    status           Json
+    bonuses          Json
+    savingThrows     Json
+    skills           Json
+
+    inventory Json? // Items, equipment, etc. To be implemented.
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 
     // Foreign fields
-    playerName  User         @relation(fields: [userId], references: [id], onDelete: Cascade) // user reference fields ties User model id to Character model userId, if user is deleted, cascade delete all characters.
-    stats       Stat         @relation(fields: [statsId], references: [id], onDelete: Cascade) // Stat reference
-    skills      Skill[]
-    SkillPoints SkillPoints?
-}
-
-model Stat {
-    id               String     @id @default(uuid()) @db.Uuid
-    Character        Character?
-    strength         Int
-    dexterity        Int
-    constitution     Int
-    intelligence     Int
-    wisdom           Int
-    charisma         Int
-    tempStrength     Int?
-    tempDexterity    Int?
-    tempConstitution Int?
-    tempIntelligence Int?
-    tempWisdom       Int?
-    tempCharisma     Int?
-}
-
-model Skill {
-    id          String      @id @default(uuid()) @db.Uuid
-    character   Character   @relation(fields: [characterId], references: [id], onDelete: Cascade)
-    characterId String      @unique @db.Uuid
-    name        String
-    ability     AbilityEnum // e.g dexterity
-    ranks       Int
-    miscMod     Int?
-    isLearned   Boolean     @default(false)
-}
-
-model SkillPoints {
-    id          String    @id @default(uuid()) @db.Uuid
-    characterId String    @unique @db.Uuid
-    max         Int
-    current     Int
-    character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
-}
-
-enum AbilityEnum {
-    STRENGTH
-    DEXTERITY
-    CONSTITUTION
-    INTELLIGENCE
-    WISDOM
-    CHARISMA
-}
-
-enum AlignmentEnum {
-    LAWFUL_GOOD
-    NEUTRAL_GOOD
-    CHAOTIC_GOOD
-    LAWFUL_NEUTRAL
-    TRUE_NEUTRAL
-    CHAOTIC_NEUTRAL
-    LAWFUL_EVIL
-    NEUTRAL_EVIL
-    CHAOTIC_EVIL
-}
-
-enum SizeEnum {
-    GIANT
-    LARGE
-    MEDIUM
-    SMALL
-    TINY
+    playerName User @relation(fields: [userId], references: [id], onDelete: Cascade) // user reference fields ties User model id to Character model userId, if user is deleted, cascade delete all characters.
 }
