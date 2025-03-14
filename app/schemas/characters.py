@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import Dict, Set, Optional
+from typing_extensions import Literal
 from enum import Enum
 
 
@@ -34,8 +35,8 @@ class ClassBaseSaves(BaseModel):
 
 
 class ClassSpellShape(BaseModel):
-    spellsPerDay: Dict[int, int]
-    spellsKnown: Dict[int, int]
+    spellsPerDay: Dict[Literal[0, 1, 2, 3, 4, 5, 6], int]  # No more lv 10 spells!
+    spellsKnown: Dict[Literal[0, 1, 2, 3, 4, 5, 6], int]
 
 
 class ClassShape(BaseModel):
@@ -89,7 +90,7 @@ class CharacterDetails(BaseModel):
 ## Stats section
 
 
-class ModifiersShape(BaseModel):
+class ScoresModifiersShape(BaseModel):
     strength: int
     dexterity: int
     constitution: int
@@ -99,80 +100,92 @@ class ModifiersShape(BaseModel):
 
 
 class Stats(BaseModel):
-    strength: int
-    dexterity: int
-    constitution: int
-    intelligence: int
-    wisdom: int
-    charisma: int
-    modifiers: Dict[str, int]
-    tempScores: Dict[str, int]
-    tempModifiers: Dict[str, int]
+    scores: ScoresModifiersShape
+    modifiers: ScoresModifiersShape
+    tempScores: Optional[ScoresModifiersShape]
+    tempModifiers: Optional[ScoresModifiersShape]
 
 
-class SaveThrow(BaseModel):
-    magicMod: int
-    miscMod: int
-    tempMod: int
-    total: Optional[int] = None
+## Status section
 
 
-class SavingThrows(BaseModel):
-    fortitude: SaveThrow
-    reflex: SaveThrow
-    will: SaveThrow
-
-
-class ArmorClassType(BaseModel):
+class ArmorClassShape(BaseModel):
     aBonus: int
     naturalArmor: int
     miscModifier: int
 
 
-class HealthStatus(BaseModel):
+class HealthShape(BaseModel):
     maxHealth: int
     currentHealth: int
     damage: int
     hitDie: int
 
 
-class SpeedType(BaseModel):
+class SpeedShape(BaseModel):
     speed: int
 
 
 class Status(BaseModel):
-    armorClass: ArmorClassType
-    health: HealthStatus
-    speed: SpeedType
+    armorClass: ArmorClassShape
+    health: HealthShape
+    speed: SpeedShape
+
+
+## bonus section
+
+
+class InitiativeShape(BaseModel):
+    initiativeTotal: int
+    miscModifier: int
 
 
 class Bonus(BaseModel):
     baseAttackBonus: int
-    initiative: int
+    initiative: InitiativeShape
 
 
-class Skill(BaseModel):
+## savingThrows section
+
+
+class SavingThrowsShape(BaseModel):
+    miscMod: int
+    magicMod: int
+    tempMod: int
+    total: int
+
+
+class SavingThrows(BaseModel):
+    fortitude: SavingThrowsShape
+    reflex: SavingThrowsShape
+    will: SavingThrowsShape
+
+
+## skills section
+
+
+class AbilityNameEnum(str, Enum):
+    strength = "strength"
+    dexterity = "dexterity"
+    constitution = "constitution"
+    wisdom = "wisdom"
+    intelligence = "intelligence"
+    charisma = "charisma"
+
+
+class SkillPointsShape(BaseModel):
+    maximum: int
+    current: int
+
+
+class SkillsShape(BaseModel):
     learned: bool
-    abilityName: str
+    abilityName: AbilityNameEnum
     ranks: int
     miscMod: int
     skillMod: int
 
 
-class SkillPoints(BaseModel):
-    max: int
-    current: int
-
-
 class Skills(BaseModel):
-    skillPoints: SkillPoints
-    skills: Dict[str, Skill]
-
-
-class State(BaseModel):
-    CharacterDetails: CharacterDetails
-    stats: Stats
-    status: Status
-    bonus: Bonus
-    SavingThrows: SavingThrows
-    skills: Skills
+    skillPoints: SkillPointsShape
+    skills: Dict[str, SkillsShape]
