@@ -1,8 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from app.db import db
 from app.schemas.users import UserSignUp, UserResponse
-from app.services.user_service import create_user, get_user_by_username, get_user_by_id
-from app.auth import hash_password
+from app.services.user_service import create_user, get_user_by_id
 
 """ Generate API router, will be registered to app in __init__.py """
 router = APIRouter()
