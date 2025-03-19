@@ -4,7 +4,7 @@ from app.schemas.users import UserSignIn, UserSignUp
 from app.auth import verify_password, hash_password
 from app.utils.auth import (
     create_access_token,
-    issue_refresh_token,
+    create_refresh_token,
     verify_refresh_token,
 )
 
@@ -35,6 +35,7 @@ async def signin(user: UserSignIn):
         as well as a refresh token for increased security and accessability
             Example:
             {
+                "username": "your_username_here"
                 "access_token": "your_jwt_token_here",
                 "token_type": "bearer"
                 "refresh_token": "your_refresh_token_here
@@ -66,10 +67,12 @@ async def signin(user: UserSignIn):
             raise HTTPException(status_code=400, detail="Invalid OAuth credentials")
 
     # Generate JWT token after access authentication
+    username = db_user.username
     access_token = create_access_token(data={"sub": str(db_user.id)})
-    refresh_token = issue_refresh_token(user_id=str(db_user.id))
+    refresh_token = create_refresh_token(user_id=str(db_user.id))
 
     return {
+        "username": username,
         "access_token": access_token,
         "token_type": "bearer",
         "refresh_token": refresh_token,
