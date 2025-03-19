@@ -70,8 +70,45 @@ def verify_refresh_token(refresh_token: str) -> str:
     user_id: str = payload.get("sub")
     if not user_id:
         raise HTTPException(status_code=401, detail="Invalid refresh token")
+    if datetime.now(timezone.utc) > datetime.fromtimestamp(payload["exp"]):
+        raise HTTPException(status_code=401, detail="Refresh token has expired")
 
     return user_id
+
+
+def verify_session(refresh_token: str, access_token: str = Depends(oauth2_scheme)):
+    """
+    Verify both access token and refresh token
+
+    Will be used for endpoint verify to check validity of both access and refresh tokens.
+    Returns success if both tokens are valid
+    If either token is invalid, raises a 401, unauthorized.
+
+    Args:
+        refresh_token(str): The refresh token provided in the request body
+        access_token(str): The access token extracted from Authorization header
+
+    Returns:
+        bool: Access tokens match
+
+    Raises:
+        HTTPException: If either token is invalid or expired, returns a 401 status code.
+    """
+    try:
+        access_user_id = verify_access_token(access_token)
+        refresh_user_id = verify_refresh_token(refresh_token)
+
+        # Check if both tokens belong to the same user
+        if access_user_id != refresh_user_id:
+            raise HTTPException(status_code=401, detail="Tokens do not match")
+
+        return access_user_id == refresh_user_id
+    except JWTError as e:
+        raise HTTPException(
+            status_code=401, detail=f"Invalid or expired token: {str(e)}"
+        )
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
 
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:

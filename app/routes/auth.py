@@ -1,19 +1,28 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Response, Request
+from fastapi.responses import JSONResponse
+from datetime import datetime, timedelta, timezone
 from app.db import db
-from app.schemas.users import UserSignIn, UserSignUp
-from app.auth import verify_password, hash_password
+from app.schemas.users import UserSignIn
+from app.auth import verify_password
 from app.utils.auth import (
     create_access_token,
     create_refresh_token,
     verify_refresh_token,
+    verify_access_token,
+    verify_session,
 )
+from app.config import settings
 
+# JWT Expiration config
+ACCESS_TOKEN_EXPIRE_MINUTES: int = settings.ACCESS_TOKEN_EXPIRE_MINUTES
+REFRESH_TOKEN_EXPIRE_HOURS: int = settings.REFRESH_TOKEN_EXPIRE_HOURS
+secure_cookie = settings.ENVIRONMENT == "production"
 
 router = APIRouter()
 
 
 @router.post("/signin")
-async def signin(user: UserSignIn):
+async def signin(user: UserSignIn, response: Response):
     """
     Login endpoint: Authenticate a user based on email and password or OAuth credentials.
 
@@ -71,18 +80,29 @@ async def signin(user: UserSignIn):
     access_token = create_access_token(data={"sub": str(db_user.id)})
     refresh_token = create_refresh_token(user_id=str(db_user.id))
 
+    # Set refresh_token securely.
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,  # Cannot be accessed by javascript
+        secure=secure_cookie,  # Can only be set over HTTPS (for production, not dev)
+        max_age=timedelta(hours=REFRESH_TOKEN_EXPIRE_HOURS),  # Cookie expiration
+        expires=timedelta(hours=REFRESH_TOKEN_EXPIRE_HOURS)
+        + datetime.now(timezone.utc),  # Same as max_age
+        samesite="Strict",  # Prevent Cross site tracking
+    )
+
     return {
         "username": username,
         "access_token": access_token,
         "token_type": "bearer",
-        "refresh_token": refresh_token,
     }
 
 
 @router.post("/refresh")
-async def refresh_token(refresh_token: str):
+async def refresh_token(request: Request):
     """
-    Refresh endpoint: issue a new access token using a valid refresh.
+    Refresh endpoint: issue a new access token using a valid refresh token extracted from cookies.
 
     This endpoint allows users to refresh their access by providing a valid refresh token
     The refresh token must be valid and not expired, if expired, a new login will be required, and user will be rerouted to login
@@ -94,13 +114,24 @@ async def refresh_token(refresh_token: str):
     Returns:
         dict: A dictionary containing the new access token ('access_token') and the token type ('token_type', always "bearer")
     """
+    refresh_token = request.cookies.get("refresh_token")
+    if not refresh_token:
+        raise HTTPException(
+            status_code=401, detail="No valid refresh token found in cookies"
+        )
     user_id = verify_refresh_token(refresh_token)
     access_token = create_access_token(data={"sub": user_id})
     return {"access_token": access_token, "token_type": "bearer"}
 
 
 @router.post("/verify")
-async def verify_token(access_token: str):
+async def verify_token(refresh_token: str):
     """
-    Validation endpoint for verifying token validity.
+    Validation endpoint for verifying all token validities.
     """
+    try:
+        if verify_session(refresh_token):
+            return {"valid": True}
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
