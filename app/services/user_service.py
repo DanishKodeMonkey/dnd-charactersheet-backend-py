@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status
 from app.db import db
-from app.auth import hash_password, verify_password
-from app.schemas.users import UserSignUp, UserSignIn
+from app.auth import hash_password
+from app.schemas.users import UserSignUp
 
 """ HUSKAT accept Oauth providers for google and discord """
 
@@ -25,6 +25,11 @@ async def create_user(user_signup: UserSignUp):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"An error occured while creating the user: {str(e)}",
         )
+
+
+async def get_user_by_email(email: str):
+    user = await db.user.find_unique(where={"email": email})
+    return user
 
 
 async def get_user_by_username(username: str):
