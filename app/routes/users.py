@@ -45,7 +45,7 @@ async def signup(user: UserSignUp):  # Request must match pydantic UserCreate sh
     """
     try:
         new_user = await create_user(user)
-        return {"message": "User created successfully"}
+        return new_user
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
