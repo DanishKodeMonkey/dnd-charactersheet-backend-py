@@ -16,7 +16,19 @@ ALGORITHM: str = settings.ALGORITHM
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 
-def verify_access_token(token: str = Depends(oauth2_scheme)) -> str:
+def decode_token(token: str) -> dict:
+    """
+    Decode a JWT token and return its payload for further processing.
+    Raises HTTPException if the token is invalid or expired
+    """
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+
+def verify_access_token(access_token: str = Depends(oauth2_scheme)) -> str:
     """
     Decode and verify the provided JWT access token.
 
@@ -29,14 +41,37 @@ def verify_access_token(token: str = Depends(oauth2_scheme)) -> str:
     Raises:
         HTTPException: If the token is invalid or cannot be decoded, an exception is raised with a 401 status code.
     """
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: str = payload.get("sub")
-        if not user_id:
-            raise HTTPException(status_code=401, detail="Invalid token")
-        return user_id
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+    payload = decode_token(access_token)
+    if payload.get("type") != "access":
+        raise HTTPException(status_code=401, detail="Invalid access token type")
+    user_id: str = payload.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="invalid token")
+    return user_id
+
+
+def verify_refresh_token(refresh_token: str) -> str:
+    """
+    Verifies provided refresh token and extracts the user ID from it
+
+    Args:
+        refresh_token(str): The refresh token to be verified
+
+    Returns:
+        str: The user ID to be extracted from the refresh token's payload
+
+    Raises:
+        HTTPException: If the refresh token is invalid or expired, an exception is raised
+    """
+    payload = decode_token(refresh_token)
+
+    if payload.get("type") != "refresh":
+        raise HTTPException(status_code=401, detail="Invalid refresh token type")
+    user_id: str = payload.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+    return user_id
 
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
@@ -55,7 +90,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     expire = datetime.now(timezone.utc) + (
         expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     )
-    to_encode.update({"exp": expire})
+    to_encode.update({"exp": expire, "type": "access"})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
@@ -70,31 +105,5 @@ def create_refresh_token(user_id: str) -> str:
         str: The generated JWT refresh token as a string.
     """
     expire = datetime.now(timezone.utc) + timedelta(hours=REFRESH_TOKEN_EXPIRE_HOURS)
-    payload = {"sub": user_id, "exp": expire}
+    payload = {"sub": user_id, "exp": expire, "type": "refresh"}
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
-
-
-def verify_refresh_token(refresh_token: str) -> str:
-    """
-    Verifies provided refresh token and extracts the user ID from it
-
-    Args:
-        refresh_token(str): The refresh token to be verified
-
-    Returns:
-        str: The user ID to be extracted from the refresh token's payload
-
-    Raises:
-        HTTPException: If the refresh token is invalid or expired, an exception is raised
-    """
-    try:
-        payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: str = payload.get("sub")
-        if not user_id:
-            raise HTTPException(status_code=401, detail="Invalid refresh token")
-        return user_id
-    except JWTError:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid or expired refresh token. Please log in again.",
-        )

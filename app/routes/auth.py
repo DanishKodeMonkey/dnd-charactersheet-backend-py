@@ -91,19 +91,16 @@ async def refresh_token(refresh_token: str):
     Args:
         refresh_token(str): Refresh token to be validated and used to issue a new token
 
-    Raises:
-        HTTPException: If the refresh token is invalid or expired(401)
-
     Returns:
         dict: A dictionary containing the new access token ('access_token') and the token type ('token_type', always "bearer")
     """
-    try:
-        user_id = verify_refresh_token(refresh_token)
+    user_id = verify_refresh_token(refresh_token)
+    access_token = create_access_token(data={"sub": user_id})
+    return {"access_token": access_token, "token_type": "bearer"}
 
-        # generate access token
-        access_token = create_access_token(data={"sub": user_id})
 
-        return {"access_token": access_token, "token_type": "bearer"}
-    except HTTPException as exception:
-        # Log error if it occurs, and raise exception to frontend for handling
-        return exception
+@router.post("/verify")
+async def verify_token(access_token: str):
+    """
+    Validation endpoint for verifying token validity.
+    """
