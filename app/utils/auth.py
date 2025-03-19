@@ -59,7 +59,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def issue_refresh_token(user_id: str) -> str:
+def create_refresh_token(user_id: str) -> str:
     """
     Generate a JWT refresh token with a 24-hour expiration for the given user ID.
 
