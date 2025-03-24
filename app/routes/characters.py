@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends
+from app.utils.auth import verify_access_token
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(verify_access_token)])
 
 
 # Testing route
