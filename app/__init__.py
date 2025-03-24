@@ -12,7 +12,7 @@ def create_app() -> FastAPI:
     async def lifespan(app: FastAPI):
         # Load database using prisma
         await connect_db()
-        yield
+        yield  # Pause here until application is shut down
         # Disconnect prisma after use
         await disconnect_db()
 
