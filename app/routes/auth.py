@@ -135,3 +135,11 @@ async def verify_token(refresh_token: str):
     except Exception as e:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
+
+@router.post("/logout")
+async def logout(response: Response):
+    """
+    Logout endpoint: Clears refresh token cookie for user
+    """
+    response.delete_cookie("refresh_token")
+    return {"message": "Logged out successfully"}

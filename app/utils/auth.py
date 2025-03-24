@@ -13,7 +13,8 @@ SECRET_KEY: str = settings.JWT_SECRET
 ALGORITHM: str = settings.ALGORITHM
 
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+oauth2_scheme_access = OAuth2PasswordBearer(tokenUrl="signin")
+oauth2_scheme_refresh = OAuth2PasswordBearer(tokenUrl="refresh")
 
 
 def decode_token(token: str) -> dict:
@@ -28,7 +29,7 @@ def decode_token(token: str) -> dict:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
 
-def verify_access_token(access_token: str = Depends(oauth2_scheme)) -> str:
+def verify_access_token(access_token: str = Depends(oauth2_scheme_access)) -> str:
     """
     Decode and verify the provided JWT access token.
 
@@ -50,7 +51,7 @@ def verify_access_token(access_token: str = Depends(oauth2_scheme)) -> str:
     return user_id
 
 
-def verify_refresh_token(refresh_token: str) -> str:
+def verify_refresh_token(refresh_token: str = Depends(oauth2_scheme_refresh)) -> str:
     """
     Verifies provided refresh token and extracts the user ID from it
 
@@ -76,7 +77,10 @@ def verify_refresh_token(refresh_token: str) -> str:
     return user_id
 
 
-def verify_session(refresh_token: str, access_token: str = Depends(oauth2_scheme)):
+def verify_session(
+    refresh_token: str = Depends(oauth2_scheme_refresh),
+    access_token: str = Depends(oauth2_scheme_access),
+):
     """
     Verify both access token and refresh token
 
