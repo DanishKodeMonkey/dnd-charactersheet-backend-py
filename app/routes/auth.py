@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Response, Request
+from fastapi import APIRouter, HTTPException, Response, Request, Depends
 from fastapi.responses import JSONResponse
 from datetime import datetime, timedelta, timezone
 from app.db import db
@@ -12,6 +12,9 @@ from app.utils.auth import (
     verify_session,
 )
 from app.config import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 # JWT Expiration config
 ACCESS_TOKEN_EXPIRE_MINUTES: int = settings.ACCESS_TOKEN_EXPIRE_MINUTES
@@ -85,11 +88,11 @@ async def signin(user: UserSignIn, response: Response):
         key="refresh_token",
         value=refresh_token,
         httponly=True,  # Cannot be accessed by javascript
-        secure=secure_cookie,  # Can only be set over HTTPS (for production, not dev)
+        secure=False,  # Can only be set over HTTPS (for production, not dev)
         max_age=timedelta(hours=REFRESH_TOKEN_EXPIRE_HOURS),  # Cookie expiration
         expires=timedelta(hours=REFRESH_TOKEN_EXPIRE_HOURS)
         + datetime.now(timezone.utc),  # Same as max_age
-        samesite="Strict",  # Prevent Cross site tracking
+        samesite="none",  # Prevent Cross site tracking
     )
 
     return {
@@ -125,15 +128,25 @@ async def refresh_token(request: Request):
 
 
 @router.post("/verify")
-async def verify_token(refresh_token: str):
+async def verify_token(request: Request):
     """
     Validation endpoint for verifying all token validities.
     """
+    body = await request.body()
+
+    logger.info(f"Received request to /auth/verify with body: {body}")
+    logger.info(f"Request headers: {request.headers}")
+    refresh_token = request.cookies.get("refresh_token")
+
+    logger.info(f"Cookie: {refresh_token}")
+
+
+"""     user_id = access_token
     try:
-        if verify_session(refresh_token):
-            return {"valid": True}
+        new_access_token = create_access_token({"sub": user_id})
+        return {"access_token": new_access_token}
     except Exception as e:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
+        raise HTTPException(status_code=401, detail=f"Verification failed: {str(e)}") """
 
 
 @router.post("/logout")

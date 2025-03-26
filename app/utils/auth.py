@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from fastapi import HTTPException, Depends
+from fastapi import HTTPException, Depends, Request, Cookie
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from app.config import settings
@@ -14,7 +14,6 @@ ALGORITHM: str = settings.ALGORITHM
 
 
 oauth2_scheme_access = OAuth2PasswordBearer(tokenUrl="signin")
-oauth2_scheme_refresh = OAuth2PasswordBearer(tokenUrl="refresh")
 
 
 def decode_token(token: str) -> dict:
@@ -27,6 +26,17 @@ def decode_token(token: str) -> dict:
         return payload
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+
+def get_refresh_token(request: Request) -> str:
+    """
+    Extract the refresh token from the cookies in the HTTP request
+
+    """
+    refresh_token = request.cookies.get("refresh_token")
+    if not refresh_token:
+        raise HTTPException(status_code=401, detail="Refresh token missing in request")
+    return refresh_token
 
 
 def verify_access_token(access_token: str = Depends(oauth2_scheme_access)) -> str:
@@ -51,7 +61,7 @@ def verify_access_token(access_token: str = Depends(oauth2_scheme_access)) -> st
     return user_id
 
 
-def verify_refresh_token(refresh_token: str = Depends(oauth2_scheme_refresh)) -> str:
+def verify_refresh_token(refresh_token: str = Depends(get_refresh_token)) -> str:
     """
     Verifies provided refresh token and extracts the user ID from it
 
@@ -66,7 +76,7 @@ def verify_refresh_token(refresh_token: str = Depends(oauth2_scheme_refresh)) ->
     """
     payload = decode_token(refresh_token)
 
-    if payload.get("type") != "refresh":
+    if payload.get("type") != "refresh_token":
         raise HTTPException(status_code=401, detail="Invalid refresh token type")
     user_id: str = payload.get("sub")
     if not user_id:
@@ -78,7 +88,7 @@ def verify_refresh_token(refresh_token: str = Depends(oauth2_scheme_refresh)) ->
 
 
 def verify_session(
-    refresh_token: str = Depends(oauth2_scheme_refresh),
+    refresh_token: str = Depends(get_refresh_token),
     access_token: str = Depends(oauth2_scheme_access),
 ):
     """
@@ -106,7 +116,7 @@ def verify_session(
         if access_user_id != refresh_user_id:
             raise HTTPException(status_code=401, detail="Tokens do not match")
 
-        return access_user_id == refresh_user_id
+        return access_user_id
     except JWTError as e:
         raise HTTPException(
             status_code=401, detail=f"Invalid or expired token: {str(e)}"

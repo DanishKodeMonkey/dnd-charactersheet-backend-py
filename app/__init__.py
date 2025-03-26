@@ -4,6 +4,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from app.db import connect_db, disconnect_db
 from app.routes import register_routers
+from app.config.logger import setup_logger
 
 
 def create_app() -> FastAPI:
@@ -16,7 +17,9 @@ def create_app() -> FastAPI:
         # Disconnect prisma after use
         await disconnect_db()
 
-    app = FastAPI(title="FastApi Prisma dnd API", lifespan=lifespan)
+    app = FastAPI(title="FastApi Prisma dnd API", lifespan=lifespan, debug=True)
+
+    logger = setup_logger()
 
     origins = ["http://localhost:5173"]
 
@@ -27,6 +30,7 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
     register_routers(app)
 
     return app
