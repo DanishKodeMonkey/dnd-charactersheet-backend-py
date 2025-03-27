@@ -92,7 +92,7 @@ async def signin(user: UserSignIn, response: Response):
         max_age=timedelta(hours=REFRESH_TOKEN_EXPIRE_HOURS),  # Cookie expiration
         expires=timedelta(hours=REFRESH_TOKEN_EXPIRE_HOURS)
         + datetime.now(timezone.utc),  # Same as max_age
-        samesite="none",  # Prevent Cross site tracking
+        samesite="lax",  # Prevent Cross site tracking
     )
 
     return {
@@ -132,21 +132,32 @@ async def verify_token(request: Request):
     """
     Validation endpoint for verifying all token validities.
     """
-    body = await request.body()
+    body = await request.json()
+    access_token = body.get("access_token")
 
-    logger.info(f"Received request to /auth/verify with body: {body}")
-    logger.info(f"Request headers: {request.headers}")
+    logger.info(f"\n \n Received request to /auth/verify with body: {body}")
+    logger.info(f"\n \n access_token {access_token}")
+    logger.info(f"\n \n Request headers: {request.headers}")
     refresh_token = request.cookies.get("refresh_token")
 
-    logger.info(f"Cookie: {refresh_token}")
+    logger.info(f"\n \n Cookie: {refresh_token}")
 
-
-"""     user_id = access_token
     try:
+        user_id = verify_session()
+
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Verification failed...")
+
         new_access_token = create_access_token({"sub": user_id})
-        return {"access_token": new_access_token}
-    except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Verification failed: {str(e)}") """
+        return {
+            "message": "Authorization verified, new access token issued",
+            "access_token": new_access_token,
+        }
+    except Exception as refresh_error:
+        logger.warning(f"Validation failed: {str(refresh_error)}")
+        raise HTTPException(
+            status_code=401, detail="Invalid refresh token, re-login required"
+        )
 
 
 @router.post("/logout")

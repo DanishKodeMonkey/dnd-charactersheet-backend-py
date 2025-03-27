@@ -3,6 +3,9 @@ from fastapi import HTTPException, Depends, Request, Cookie
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from app.config import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 # JWT Expiration config
 ACCESS_TOKEN_EXPIRE_MINUTES: int = settings.ACCESS_TOKEN_EXPIRE_MINUTES
@@ -23,8 +26,10 @@ def decode_token(token: str) -> dict:
     """
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        logger.info(f"Decoded token: {payload}")
         return payload
-    except JWTError:
+    except JWTError as e:
+        logger.warning(f"Token decoding failed: {str(e)}")
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
 
@@ -111,6 +116,8 @@ def verify_session(
     try:
         access_user_id = verify_access_token(access_token)
         refresh_user_id = verify_refresh_token(refresh_token)
+        logger.info(access_user_id)
+        logger.info(refresh_user_id)
 
         # Check if both tokens belong to the same user
         if access_user_id != refresh_user_id:
